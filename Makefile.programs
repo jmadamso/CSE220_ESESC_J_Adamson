@@ -1,0 +1,162 @@
+##
+## Makefile to compile examples programs that use the Midifile library.
+##
+## Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+## Creation Date: Sun Apr  3 15:34:28 PDT 2005
+## Last Modified: Tue Feb 14 10:03:13 PST 2017
+## Filename:      midifile/Makefile.programs
+## Website:       http://midifile.sapp.org
+## Syntax:        GNU Makefile
+##
+## Description:   This Makefile creates example programs which utilize the
+##                lib/libmidifile.a library.
+##
+## To run this makefile, type (without quotes) "make -f Makefile.examples",
+## Although it is intended to be used the file "Makefile" which runs this
+## makefile with the command "make examples".  Note that you have to first
+## create the library file with the makefile "Makefile.library" (by typing
+## the command "make library").
+##
+## Without arguments, this makefile will compile all example programs.
+## If you give a program name as an argument, it will compile
+## just that program. E.g.: "make -f Makefile.examples blank" or used
+## in conjunction with "Makefile", type "make blank", which will
+## compile the "./examples/blank.cpp" program and place it in the
+## ./bin directory.
+##
+
+##############################
+##
+## Operating-system specific settings:
+##
+
+ARCH   =
+ENV    =
+OSTYPE = LINUX
+
+EXTEN     =
+# EXTEN   = .exe
+
+
+##############################
+#
+# User-modifiable configuration variables:
+#
+
+SRCDIR    = tools
+INCDIR    = include
+OBJDIR    = obj
+LIBDIR    = lib
+LIBFILE   = midifile
+LIBPATH   = $(LIBDIR)/lib$(LIBFILE).a
+TARGDIR   = bin
+#COMPILER  = LANG=C $(ENV) g++ $(ARCH) 
+COMPILER  = LANG=C $(ENV) riscv64-linux-gnu-gcc $(ARCH) 
+DEFINES   = 
+
+PREFLAGS  = -O3 -Wall -I$(INCDIR) $(DEFINES)
+# Add -static flag to compile without dynamics libraries for better portability:
+PREFLAGS += -static
+# Using C++ 2011 standard: (NOT the same thing as adding the std library)
+PREFLAGS += -std=c++11
+
+POSTFLAGS ?= -L$(LIBDIR) -l$(LIBFILE)
+
+#added by joe
+POSTFLAGS += -lstdc++ -lm 
+#-lstdc++ : this addition tells gcc to add the std:: library, which is
+#not there by default
+#-lm : this addition tells gcc to add the math library (needed by some of the examples)
+
+#IF YOUR CODE DOES NOT COMPILE WITH MAKEFILE: it is probably missing c++ libraries. need to examine
+#the output to determine which libraries it is missing. 
+#if cmake generated your makefile, you may need to manually edit Makefile to include the -l flags
+#IF YOUR CODE DOES NOT WORK WITH CMAKE: i really don't know
+
+#                                                                         #
+# End of user-modifiable variables.                                       #
+#                                                                         #
+###########################################################################
+
+
+# setting up the directory paths to search for program source code
+vpath %.cpp   $(SRCDIR)
+
+# generating a list of the programs to compile with "make all"
+PROGS1=$(notdir $(patsubst %.cpp,%,$(wildcard $(SRCDIR)/*.cpp)))
+ifeq ($(shell uname),Darwin)
+	PROGS := $(filter-out midi2beep,$(PROGS1))
+else
+	PROGS := $(PROGS1)
+endif
+
+
+##############################
+##
+## Targets:
+##
+
+# targets which don't actually refer to files
+.PHONY : all info library examples programs bin options clean 
+
+examples: all
+all: bin $(addprefix $(TARGDIR)/,$(PROGS))
+	@echo Finished compiling all programs.
+
+
+info:
+	@echo "Programs to compile: $(PROGS)" | fmt
+
+
+bin:
+ifeq ($(wildcard $(TARGDIR)),)
+	@-mkdir -p $(TARGDIR)
+endif
+
+
+$(TARGDIR)/henonfile:
+	@echo Skipping henonfile.cpp since it needs external library.
+$(TARGDIR)/mid2hum:
+	@echo Skipping mid2hum.cpp since it needs external library.
+$(TARGDIR)/peep2midi:
+	@echo Skipping peep2midi.cpp since it needs external library.
+$(TARGDIR)/midiexcerpt:
+	@echo Skipping $@ until PerlRegularExpressions class is added.
+
+#$(TARGDIR)/binasc:
+#	@echo Skipping $@ until it is updated to C++11 + STL.
+
+
+
+
+##############################
+#
+# Default targets:
+#
+
+$(TARGDIR)/% : $(notdir %.cpp) $(LIBPATH)
+ifeq ($(wildcard $(TARGDIR)),)
+	@-mkdir -p $(TARGDIR)
+endif
+ifeq ($(wildcard $(LIBDIR)),)
+	$(MAKE) -f Makefile.library
+endif
+	@echo [CC] $@
+	$(COMPILER) $(PREFLAGS) -o $@.riscv64 $< $(POSTFLAGS) 
+	#$(COMPILER) $(PREFLAGS) -o $@ $< $(POSTFLAGS) 
+
+
+% : $(notdir %.cpp) $(LIBPATH)
+ifeq ($(wildcard $(TARGDIR)),)
+	@-mkdir -p $(TARGDIR)
+endif
+ifeq ($(wildcard $(LIBDIR)),)
+	$(MAKE) -f Makefile.library
+endif
+	@echo [CC] $@
+	$(COMPILER) $(PREFLAGS) -o $(TARGDIR)/$@.riscv64 $< $(POSTFLAGS)
+	#$(COMPILER) $(PREFLAGS) -o $(TARGDIR)/$@ $< $(POSTFLAGS)
+
+
+
+

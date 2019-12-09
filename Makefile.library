@@ -1,0 +1,153 @@
+##
+## Makefile to compile Midifile library.
+##
+## Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+## Creation Date: Sun Apr  3 00:51:10 PST 2005
+## Last Modified: Mon Feb  9 12:20:53 PST 2015
+## Filename:      midifile/Makefile.library
+## Website:       http://midifile.sapp.org
+## Syntax:        GNU Makefile
+##
+## Description:   This Makefile creates the Midifile library
+##                (lib/libmidifile.a).
+##
+## To run this makefile, type (without quotes) "make -f Makefile.library",
+## Although it is intended to be used by the file "Makefile" which runs this
+## makefile with the command "make library".  After the library file is
+## created, you can compile specific programs with the Makefile.examples
+## file.
+##
+## NB: To build on Windows with Visual Studio, use visual-studio/midifile.sln
+##     instead of this Makefile.
+##
+
+##############################
+##
+## Operating-system specific settings:
+##
+
+ARCH   =
+ENV    =
+OSTYPE = LINUX
+
+##############################
+##
+## User-modifiable configuration variables:
+##
+
+OBJDIR    = obj
+SRCDIR    = src
+INCDIR    = include
+LIBDIR    = lib
+LIBFILE   = libmidifile.a
+DYLIBFILE = libmidifile.dylib
+COMPILER  = LANG=C $(ENV) riscv64-linux-gnu-gcc  $(ARCH)
+AR        = ar
+RANLIB    = ranlib
+DEFINES   =
+PREFLAGS  = -c -g -Wall -O3 $(DEFINES) -I$(INCDIR)
+
+# Using C++ 2011 standard:
+PREFLAGS += -std=c++11
+
+#                                                                         #
+# End of user-modifiable variables.                                       #
+#                                                                         #
+###########################################################################
+
+
+# setting up the directory paths to search for dependency files
+vpath %.h   $(INCDIR):$(SRCDIR)
+vpath %.cpp $(SRCDIR):$(INCDIR)
+vpath %.o   $(OBJDIR)
+
+# generating a list of the object files
+OBJS = $(notdir $(patsubst %.cpp,%.o,$(wildcard $(SRCDIR)/*.cpp)))
+
+
+
+##############################
+##
+## Targets:
+##
+
+# targets which don't actually refer to files
+.PHONY : all clean makedirs
+
+
+all: makedirs $(OBJS)
+ifeq ($(OSTYPE),OSX)
+	@echo "Creating midifile library file for OSX (Intel)..."
+	-rm -f $(LIBDIR)/$(LIBFILE)
+	-rm -f $(LIBDIR)/$(DYLIBFILE)
+	$(AR) r $(LIBDIR)/$(LIBFILE) $(OBJDIR)/*.o
+	$(RANLIB) $(LIBDIR)/$(LIBFILE)
+#	@$(COMPILER) -dynamiclib -o $(LIBDIR)/$(DYLIBFILE) $(OBJDIR)/*.o
+else
+	@echo "Creating midifile library file for linux ..."
+	-rm -f $(LIBDIR)/$(LIBFILE)
+	$(AR) r $(LIBDIR)/$(LIBFILE) $(OBJDIR)/*.o
+	$(RANLIB) $(LIBDIR)/$(LIBFILE)
+endif
+
+
+clean:
+	@echo Erasing object files:
+	-rm -f $(OBJDIR)/*.o
+	@echo Erasing obj directory:
+	-rmdir $(OBJDIR)
+
+
+makedirs:
+	@-mkdir -p $(OBJDIR)
+	@-mkdir -p $(LIBDIR)
+
+
+##############################
+##
+## Default target:
+##
+
+%.o : %.cpp
+	@echo [CC] $@
+	$(COMPILER) $(PREFLAGS) -o $(OBJDIR)/$(notdir $@) $<
+
+
+
+###########################################################################
+#                                                                         #
+# Dependencies -- generated with the following command in                 #
+#      the source directory (in bash shell):                              #
+#                                                                         #
+#   cd src
+#   for i in *.cpp                                                        #
+#   do                                                                    #
+#      cc -I../include -MM $i | sed 's/\.\.\/include\///g'                #
+#      echo ""                                                            #
+#   done                                                                  #
+#                                                                         #
+# Or in a csh-type shell (such as tcsh):                                  #
+#                                                                         #
+#   cd src
+#   foreach i (*.cpp)                                                     #
+#      cc -I../include -MM $i | sed 's/\.\.\/include\///g'                #
+#      echo ""                                                            #
+#   end                                                                   #
+#                                                                         #
+
+Binasc.o: Binasc.cpp Binasc.h
+
+MidiEvent.o: MidiEvent.cpp MidiEvent.h MidiMessage.h
+
+MidiEventList.o: MidiEventList.cpp MidiEventList.h \
+  MidiEvent.h MidiMessage.h
+
+MidiFile.o: MidiFile.cpp MidiFile.h MidiEventList.h \
+  MidiEvent.h MidiMessage.h Binasc.h
+
+MidiMessage.o: MidiMessage.cpp MidiMessage.h
+
+Options.o: Options.cpp Options.h
+
+
+
