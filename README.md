@@ -1,4 +1,9 @@
 # CSE220_ESESC_J_Adamson
+
+This is a repository covering the work completed for the final project for CSE220, Computer Architecture. 
+It compiles a risc-v binary suitable for use with the ESESC benchmarking program in order to analyze instruction usage
+while processing a midi file in various ways.
+
 3 makefiles are used to compile: https://github.com/craigsapp/midifile
 for riscv
 
